@@ -64,7 +64,8 @@ class CsvTextOutput(output:OutputStream):TextOutput {
         "fontSize",
         "fontColor",
         "bgcolor",
-        "link"
+        "link",
+        "debug",
     )
   }
 
@@ -82,7 +83,8 @@ class CsvTextOutput(output:OutputStream):TextOutput {
         text.fontSize,
         text.color,
         text.backgroundColor,
-        text.link
+        text.link,
+        text.debug
     )
   }
 

@@ -21,6 +21,7 @@ import io.mfj.textricator.text.Text
 import java.io.InputStream
 
 import com.itextpdf.kernel.colors.*
+import com.itextpdf.kernel.geom.Matrix
 import com.itextpdf.kernel.geom.Vector
 import com.itextpdf.kernel.pdf.*
 import com.itextpdf.kernel.pdf.canvas.parser.EventType
@@ -123,15 +124,19 @@ class Itext7TextExtractor(input:InputStream):TextExtractor {
         val effMatrix = ri.textMatrix.multiply( ri.graphicsState.ctm )
         val fontSize = Vector(0f,ri.fontSize,0f).cross(effMatrix)[1]
 
+        val debug = "tm:${matrix.str()} ctm:${matrix.str()}"
+
         val text = Text(content = content, backgroundColor = null, pageNumber = pageNumber,
             fontSize = fontSize, font = font, color = color,
             ulx = ulx, uly = uly, lrx = lrx, lry = lry,
-            link = link )
+            link = link, debug = debug )
 
         texts.add( text )
       }
       super.eventOccurred(data, type)
     }
+
+    private fun Matrix.str():String = "[[${this[0]},${this[1]},${this[2]}],[${this[3]},${this[4]},${this[5]}],[${this[6]},${this[7]},${this[8]}]]"
 
     private fun Color.getHexColor(): String? =
         when ( this ) {

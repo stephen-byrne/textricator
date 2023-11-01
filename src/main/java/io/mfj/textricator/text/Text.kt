@@ -51,7 +51,9 @@ data class Text(
     val fontSize:Float,
     val color:String? = null,
     val backgroundColor:String? = null,
-    val link:String? = null ) {
+    val link:String? = null,
+    val debug:String? = null
+) {
 
   val width:Float
     @Transient
