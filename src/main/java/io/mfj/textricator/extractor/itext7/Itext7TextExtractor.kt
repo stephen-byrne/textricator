@@ -21,6 +21,7 @@ import io.mfj.textricator.text.Text
 import java.io.InputStream
 
 import com.itextpdf.kernel.colors.*
+import com.itextpdf.kernel.font.PdfFont
 import com.itextpdf.kernel.geom.Matrix
 import com.itextpdf.kernel.geom.Vector
 import com.itextpdf.kernel.pdf.*
@@ -29,6 +30,7 @@ import com.itextpdf.kernel.pdf.canvas.parser.PdfTextExtractor
 import com.itextpdf.kernel.pdf.canvas.parser.data.IEventData
 import com.itextpdf.kernel.pdf.canvas.parser.data.TextRenderInfo
 import com.itextpdf.kernel.pdf.canvas.parser.listener.LocationTextExtractionStrategy
+import com.itextpdf.io.util.TextUtil
 
 /**
  * Extract text using iText 7.
@@ -124,7 +126,15 @@ class Itext7TextExtractor(input:InputStream):TextExtractor {
         val effMatrix = ri.textMatrix.multiply( ri.graphicsState.ctm )
         val fontSize = Vector(0f,ri.fontSize,0f).cross(effMatrix)[1]
 
-        val debug = "tm:${matrix.str()} ctm:${matrix.str()}"
+        // logging for issue #47
+        val debug = sequenceOf(
+            "tm:${matrix.str()}",
+            "ctm:${matrix.str()}",
+            "chars:${content.length}",
+            "glphys:${countGlyphs(content)}",
+            "widest-glyph:${widestGlyph(ri.font,content)}", // this is text space, which is 1000 * glyph space
+            "width:${ri.font.getWidth(content)}" // this is text space, which is 1000 * glyph space
+        ).joinToString(" ")
 
         val text = Text(content = content, backgroundColor = null, pageNumber = pageNumber,
             fontSize = fontSize, font = font, color = color,
@@ -137,6 +147,46 @@ class Itext7TextExtractor(input:InputStream):TextExtractor {
     }
 
     private fun Matrix.str():String = "[[${this[0]},${this[1]},${this[2]}],[${this[3]},${this[4]},${this[5]}],[${this[6]},${this[7]},${this[8]}]]"
+
+    private fun countGlyphs(text:String):Int {
+      var glphs = 0
+      var i = 0
+      while (i < text.length) {
+        var ch: Int
+        if (TextUtil.isSurrogatePair(text, i)) {
+          ch = TextUtil.convertToUtf32(text, i)
+          glphs++
+          i++
+        } else {
+          glphs++
+          ch = text[i].code
+        }
+        i++
+      }
+      return glphs
+    }
+
+    private fun widestGlyph(font: PdfFont, text:String):String {
+      val wide:MutableMap<Int,Int> = mutableMapOf()
+      var i = 0
+      while (i < text.length) {
+        var ch: Int
+        if (TextUtil.isSurrogatePair(text, i)) {
+          ch = TextUtil.convertToUtf32(text, i)
+          i++
+        } else {
+          ch = text[i].code
+        }
+        val glyph = font.getGlyph(ch)
+        if (glyph != null) {
+          wide[ch] = glyph.width
+        }
+        i++
+      }
+      return wide.maxByOrNull { (ch,width) -> width }
+          ?.value?.toString() // do not log the character; do not want to expose data
+          ?: ""
+    }
 
     private fun Color.getHexColor(): String? =
         when ( this ) {

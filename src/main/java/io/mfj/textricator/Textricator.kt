@@ -306,6 +306,7 @@ object Textricator {
             pageFilter( pageNumber )
           }
           .flatMap { pageNumber ->
+            log.debug("extract page ${pageNumber}")
             extractor.extract( pageNumber ).asSequence()
           }
 
